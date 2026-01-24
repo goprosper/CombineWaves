@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(ls:*)",
+      "Bash(~/.local/bin/pip install --user --break-system-packages -r requirements.txt)",
+      "Bash(python -m py_compile:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(python -m pytest:*)"
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+CIA,2025-01-01,WaveFiles/CJanuary2025_parms.csv,WaveFiles/CJanuary2025_data.pip,WaveFiles/CJanuary2025_parmedit.csv
+CIA,2025-04-01,WaveFiles/CApril2025_parms.csv,WaveFiles/CApril2025_data.pip,WaveFiles/CApril2025_parmedit.csv
+CIA,2025-07-01,WaveFiles/CJuly2025_parms.csv,WaveFiles/CJuly2025_data.pip,WaveFiles/CJuly2025_parmedit.csv
+CIA,2025-01-01,WaveFiles/COctober2025_parms.csv,WaveFiles/COctober2025_data.pip,WaveFiles/COctober2025_parmedit.csv

@@ -1,0 +1,46 @@
+
+Write a python command line that does the following:
+
+I. Reads a text control file whose path is specified as a parameter. The file has one or more lines with the following format:
+study_name,study_date,parms_file_name,pip_file_name
+
+II. For each line in the control file, do the following:
+
+Read the Prosper farms file and appends questionIDs and answerIDs and writes out the appended file as parms_file_name.appended.
+
+Parms file format:
+
+The parms file documents the question and answers included in a particular wave of a survey. The parms file is a csv file that contains one row for each question in a particular survey wave. The layout of the file is as follows:
+
+Column 1: question number
+Column 2: total answers
+Column 3: question text
+Column 4: empty
+Column 5: ^-delimited list of answers (contains answer text)
+Column 6: question type (single character)
+
+An example can be found at WaveFiles/CJanuary2026_parms.csv.
+
+For each question in the parms file, there is a row in a MySql table br_question_map that can be retrieved by study_name, study_date, question_number. study_name and study_date will be provided in the control file. question_number is found in column 1 of the parms file. Retrieve the question_id and answer_value map from the br_question_map row. Append the following to the parms:
+
+Column 7: question_id
+Column 8: answer_ids where answer_ids is a ^-delimited list defined as follows:
+1. Each answer in the parms file list of answers (column 5) is assigned an answer_number (1 - number_of_answers).
+2. For each answer_number find it's position in the answer_value_map list. The index where it is found is it's corresponding answer_id.
+3) The answer_ids list just is the ^-delimited list of answer_ids as determined by this procedure.
+
+Example that illustrates definition of answer_ids list:
+Answer list (column 5): American Indian^Asian^Black/African American^East Indian^Hispanic^White^Other
+answer_value_map (from br_question_map): 3^2^?^1^6^7^4^5
+answer_ids: 3^1^0^6^7^4^5
+
+The MySql database that contains the br_question_master table is defined as follows:
+MySql version: 5.1.44
+Server IP:  50.17.224.19
+Database: ptdb
+User: root
+Password: L0w_L3v31
+
+Since the MySql version is old, please use PyMySQL==1.1.2 to access it.
+
+
