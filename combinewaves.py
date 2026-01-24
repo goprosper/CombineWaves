@@ -17,6 +17,7 @@ from typing import List
 
 from control_file import read_control_file
 from database import DatabaseClient
+from intersection import generate_common_questions
 from parmedit import load_parmedit
 from parms_processor import process_parms_file
 
@@ -52,11 +53,13 @@ def main(argv: List[str]) -> int:
         print(f"Warning: Control file is empty [{control_path}]", file=sys.stderr)
         return 0
 
-    # Track success/failure
+    # Track success/failure and appended files
     success_count = 0
     error_count = 0
+    appended_files: List[str] = []
 
-    # Process each entry
+    # Step 1: Process each entry
+    print("Step 1: Processing parms files...")
     for entry in entries:
         try:
             # Load parmedit file
@@ -71,6 +74,7 @@ def main(argv: List[str]) -> int:
                     parmedit_mapper
                 )
                 print(f"Created: {output_path}")
+                appended_files.append(output_path)
                 success_count += 1
 
         except FileNotFoundError as e:
@@ -85,12 +89,32 @@ def main(argv: List[str]) -> int:
             )
             error_count += 1
 
-    # Summary
+    # Step 1 Summary
     if error_count > 0:
         print(
-            f"\nCompleted with {success_count} succeeded, {error_count} failed",
+            f"\nStep 1 completed with {success_count} succeeded, {error_count} failed",
             file=sys.stderr
         )
+
+    # Step 2: Compute intersection and generate CommonQuestions.csv
+    if appended_files:
+        print("\nStep 2: Computing intersection...")
+        study_name = entries[0].study_name  # Use first entry's study_name
+
+        try:
+            with DatabaseClient() as db:
+                common_output = generate_common_questions(
+                    appended_files,
+                    study_name,
+                    db,
+                    "CommonQuestions.csv"
+                )
+                print(f"Created: {common_output}")
+        except Exception as e:
+            print(f"Error in Step 2: {e}", file=sys.stderr)
+            error_count += 1
+    else:
+        print("\nStep 2 skipped: No appended files were created", file=sys.stderr)
 
     return 0 if error_count == 0 else 1
 

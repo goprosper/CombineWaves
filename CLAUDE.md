@@ -10,6 +10,8 @@ CombineWaves is a Python command-line tool for processing survey data. It reads 
 
 ## Workflow
 
+### Step 1: Process Parms Files
+
 1. Read a control file with format: `study_name,study_date,parms_file_name,pip_file_name,parmedit_file_name`
 2. For each line:
    - Load the parmedit file to build a mapping from parms_question_number to question_number
@@ -19,6 +21,15 @@ CombineWaves is a Python command-line tool for processing survey data. It reads 
      - Retrieve question_id and answer_value_map
      - Compute answer_ids by mapping answer positions to database indices
    - Write output as `parms_file_name.appended`
+
+### Step 2: Compute Intersection
+
+1. Read all appended files generated in Step 1
+2. Find question_ids common to ALL appended files
+3. For each common question_id:
+   - Compute the union of answer_ids across all files
+   - Query `br_question_master` table for master_question_text
+4. Write `CommonQuestions.csv` with columns: common_question_id, master_question_text, common_answer_ids
 
 ## Parmedit File Format (CSV)
 
@@ -51,11 +62,21 @@ answer_ids:        3^1^0^6^7^4^5
 
 For each answer position (1, 2, 3...), find where that number appears in answer_value_map; the index is the answer_id.
 
+## CommonQuestions.csv Format
+
+| Column | Content |
+|--------|---------|
+| 1 | common_question_id |
+| 2 | master_question_text (from br_question_master table) |
+| 3 | common_answer_ids (^-delimited, sorted, union of all files) |
+
 ## Technology Stack
 
 - Python 3
 - PyMySQL==1.1.2 (required for MySQL 5.1.44 compatibility)
-- MySQL database on 50.17.224.19, database: ptdb, table: br_question_map
+- MySQL database on 50.17.224.19, database: ptdb
+  - Table: br_question_map (Step 1)
+  - Table: br_question_master (Step 2)
 
 ## Sample Data
 

@@ -79,3 +79,37 @@ class DatabaseClient:
                 )
 
             return None
+
+    def get_question_text(
+        self,
+        study_name: str,
+        question_id: int
+    ) -> Optional[str]:
+        """
+        Retrieve question text from br_question_master.
+
+        Args:
+            study_name: Name of the study
+            question_id: Question ID
+
+        Returns:
+            Question text if found, None otherwise
+        """
+        if not self._connection:
+            raise RuntimeError("Database connection not open. Use 'with' statement.")
+
+        sql = """
+            SELECT question_text
+            FROM br_question_master
+            WHERE study_name = %s
+              AND question_id = %s
+        """
+
+        with self._connection.cursor() as cursor:
+            cursor.execute(sql, (study_name, question_id))
+            row = cursor.fetchone()
+
+            if row:
+                return row['question_text'] or ''
+
+            return None
