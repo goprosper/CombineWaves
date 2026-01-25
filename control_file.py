@@ -12,6 +12,7 @@ class ControlEntry:
     parms_file_name: str
     pip_file_name: str
     parmedit_file_name: str
+    upload_file_name: str
 
 
 def read_control_file(path: str) -> Iterator[ControlEntry]:
@@ -37,9 +38,9 @@ def read_control_file(path: str) -> Iterator[ControlEntry]:
                 continue
 
             parts = line.split(',')
-            if len(parts) != 5:
+            if len(parts) != 6:
                 raise ValueError(
-                    f"[{path}] Line {line_num}: Expected 5 fields, got {len(parts)}: {line}"
+                    f"[{path}] Line {line_num}: Expected 6 fields, got {len(parts)}: {line}"
                 )
 
             yield ControlEntry(
@@ -47,5 +48,6 @@ def read_control_file(path: str) -> Iterator[ControlEntry]:
                 study_date=parts[1].strip(),
                 parms_file_name=parts[2].strip(),
                 pip_file_name=parts[3].strip(),
-                parmedit_file_name=parts[4].strip()
+                parmedit_file_name=parts[4].strip(),
+                upload_file_name=parts[5].strip()
             )

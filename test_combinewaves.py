@@ -162,10 +162,14 @@ class TestMainWorkflow:
             assert result == 0
 
             # Verify mocks were called
-            mock_create_parmedit_appended.assert_called_once_with(
-                parmedit_file,
-                upload_file
-            )
+            # create_parmedit_appended now takes additional kwargs for db lookup
+            mock_create_parmedit_appended.assert_called_once()
+            call_args = mock_create_parmedit_appended.call_args
+            assert call_args[0][0] == parmedit_file
+            assert call_args[0][1] == upload_file
+            assert call_args[1]['study_name'] == 'TestStudy'
+            assert call_args[1]['study_date'] == '2025-01'
+            assert call_args[1]['db_client'] is not None
             mock_load_parmedit_appended.assert_called_once_with(parmedit_appended_file)
             mock_process_parms_file.assert_called_once()
             mock_generate_common_questions.assert_called_once()

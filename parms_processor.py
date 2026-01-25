@@ -8,6 +8,7 @@ from typing import List
 from answer_mapper import compute_answer_ids
 from database import DatabaseClient
 from parmedit import ParmeditMapper
+from report import get_collector
 
 
 def process_parms_file(
@@ -54,15 +55,24 @@ def process_parms_file(
 
             parms_question_number = int(row[0]) if row[0].isdigit() else 0
             total_answers = int(row[1]) if row[1].isdigit() else 0
+            question_text = row[2].strip() if len(row) > 2 else ''
 
             # Look up question_number from parmedit mapper
             question_number = parmedit_mapper.get_question_number(parms_question_number)
 
+            report = get_collector()
+
             if question_number is None:
-                print(
-                    f"Warning: [{parms_path}] parms_question_number {parms_question_number} "
-                    f"not found in parmedit file [{parmedit_mapper.file_path}]",
-                    file=sys.stderr
+                report.warning(
+                    "ParmsQuestionNotInParmedit",
+                    f"[{parms_path}] parms_question_number {parms_question_number} not found in parmedit file [{parmedit_mapper.file_path}]",
+                    {
+                        "parms_file": parms_path,
+                        "parms_question_number": parms_question_number,
+                        "question_text": question_text,
+                        "parmedit_file": parmedit_mapper.file_path,
+                        "step": "Step1"
+                    }
                 )
                 question_id = ''
                 answer_ids = ''
@@ -75,11 +85,18 @@ def process_parms_file(
                     answer_ids = compute_answer_ids(record.answer_value_map, total_answers)
                 else:
                     # Question not found in database
-                    print(
-                        f"Warning: [{parms_path}] No database record for question_number {question_number} "
-                        f"(parms_question_number={parms_question_number}, "
-                        f"study={study_name}, date={study_date})",
-                        file=sys.stderr
+                    report.warning(
+                        "QuestionNotInDatabase",
+                        f"[{parms_path}] No database record for question_number {question_number} (parms_question_number={parms_question_number}, study={study_name}, date={study_date})",
+                        {
+                            "parms_file": parms_path,
+                            "question_number": question_number,
+                            "parms_question_number": parms_question_number,
+                            "question_text": question_text,
+                            "study_name": study_name,
+                            "study_date": study_date,
+                            "step": "Step1"
+                        }
                     )
                     question_id = ''
                     answer_ids = ''
