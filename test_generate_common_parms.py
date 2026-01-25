@@ -297,7 +297,7 @@ class TestGenerateCommonParms:
 
             # Verify column format for each row
             for i, row in enumerate(rows, start=1):
-                assert len(row) == 6  # 6 columns
+                assert len(row) == 7  # 7 columns (including common_question_id)
                 assert row[0] == str(i)  # question_number is sequential
                 assert row[3] == ''  # column 4 is always empty
 
@@ -306,6 +306,12 @@ class TestGenerateCommonParms:
             assert rows[1][0] == '2'
             assert rows[2][0] == '3'
             assert rows[3][0] == '4'  # Study Date row
+
+            # Verify common_question_id column (column 7)
+            assert rows[0][6] == '101'
+            assert rows[1][6] == '102'
+            assert rows[2][6] == '103'
+            assert rows[3][6] == ''  # Study Date row has empty common_question_id
 
             # Verify last row is Study Date
             assert rows[3][2] == 'Study Date'

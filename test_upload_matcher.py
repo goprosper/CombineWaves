@@ -360,7 +360,7 @@ class TestCreateParmeditAppended:
                 os.unlink(output_path)
 
     def test_appends_question_number(self):
-        """Last column has question_number from UPLOAD."""
+        """Second-to-last column has question_number, last column has question_id."""
         parmedit_content = '''1,2,What is your gender?,,Male^Female,S
 2,3,What is your age?,,18-24,S
 '''
@@ -381,14 +381,18 @@ class TestCreateParmeditAppended:
         try:
             create_parmedit_appended(parmedit_path, upload_path)
 
-            # Read output and verify last column
+            # Read output and verify columns
             import csv
             with open(output_path, 'r') as f:
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            assert rows[0][-1] == '101'  # First row has Q101
-            assert rows[1][-1] == '102'  # Second row has Q102
+            # question_number is second-to-last column
+            assert rows[0][-2] == '101'  # First row has Q101
+            assert rows[1][-2] == '102'  # Second row has Q102
+            # question_id is last column (empty without db)
+            assert rows[0][-1] == ''
+            assert rows[1][-1] == ''
         finally:
             os.unlink(parmedit_path)
             os.unlink(upload_path)
@@ -427,8 +431,9 @@ class TestCreateParmeditAppended:
             assert row[3] == 'col4'
             assert row[4] == 'Male^Female'
             assert row[5] == 'S'
-            # Appended column
-            assert row[6] == '101'
+            # Appended columns: question_number and question_id
+            assert row[6] == '101'  # question_number
+            assert row[7] == ''  # question_id (empty without db)
         finally:
             os.unlink(parmedit_path)
             os.unlink(upload_path)

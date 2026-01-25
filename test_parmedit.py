@@ -4,7 +4,7 @@ import os
 import tempfile
 import pytest
 
-from parmedit import ParmeditMapper, load_parmedit
+from parmedit import ParmeditMapper, load_parmedit, load_parmedit_appended
 
 
 class TestParmeditMapper:
@@ -143,6 +143,80 @@ abc,5,Question 2,,Answer,S
             mapper = load_parmedit(temp_path)
             assert mapper.get_question_number(99999) == 1
             assert mapper.get_question_number(12345) == 2
+        finally:
+            os.unlink(temp_path)
+
+
+class TestLoadParmeditAppended:
+    """Tests for load_parmedit_appended function."""
+
+    def test_load_basic(self):
+        """Load parmedit_APPENDED file and verify mapping from last column."""
+        # Last column contains the question_number from UPLOAD
+        content = """4,2,What is your gender?,,Male^Female,X,101
+373,5,What is your marital status?,,Answer1^Answer2,S,102
+5,7,Please tell us which age range you are in:,,14-17^18-24,A,103
+"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            mapper = load_parmedit_appended(temp_path)
+
+            # parms_question_number -> question_number (from last column)
+            assert mapper.get_question_number(4) == 101
+            assert mapper.get_question_number(373) == 102
+            assert mapper.get_question_number(5) == 103
+        finally:
+            os.unlink(temp_path)
+
+    def test_load_with_empty_question_number(self, capsys):
+        """Row with empty question_number logs warning."""
+        content = """4,2,What is your gender?,,Male^Female,X,101
+373,5,What is your marital status?,,Answer1^Answer2,S,
+5,7,Please tell us which age range you are in:,,14-17^18-24,A,103
+"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            mapper = load_parmedit_appended(temp_path)
+
+            # Row with empty question_number should be skipped
+            assert mapper.get_question_number(4) == 101
+            assert mapper.get_question_number(373) is None  # Empty column
+            assert mapper.get_question_number(5) == 103
+
+            # Warning should be logged
+            captured = capsys.readouterr()
+            assert "No question_number" in captured.err
+            assert "373" in captured.err
+        finally:
+            os.unlink(temp_path)
+
+    def test_load_file_not_found(self):
+        """Attempt to load non-existent file raises FileNotFoundError."""
+        with pytest.raises(FileNotFoundError):
+            load_parmedit_appended("/nonexistent/path/parmedit_APPENDED.csv")
+
+    def test_load_different_column_count(self):
+        """Handle rows with varying column counts."""
+        # Different rows may have different numbers of columns
+        content = """4,2,Q1,,A,S,101
+373,5,Q2,,A,S,extra,102
+"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            mapper = load_parmedit_appended(temp_path)
+
+            # Last column should be used regardless of column count
+            assert mapper.get_question_number(4) == 101
+            assert mapper.get_question_number(373) == 102
         finally:
             os.unlink(temp_path)
 

@@ -29,6 +29,7 @@ class ParmsRow:
     question_text: str
     answer_text_list: str
     question_type: str
+    common_question_id: int
 
 
 def load_common_questions_for_parms(filepath: str) -> List[CommonQuestion]:
@@ -149,7 +150,8 @@ def generate_common_parms(
             total_answers=len(question.common_answer_ids),
             question_text=question_text,
             answer_text_list=answer_text_list,
-            question_type=question.parms_question_type
+            question_type=question.parms_question_type,
+            common_question_id=question.common_question_id
         )
         parms_rows.append(parms_row)
 
@@ -163,7 +165,8 @@ def generate_common_parms(
                 row.question_text,
                 "",  # empty column 4
                 row.answer_text_list,
-                row.question_type
+                row.question_type,
+                row.common_question_id  # column 7
             ])
 
         # Step 3b: Write study_date metadata row
@@ -174,7 +177,8 @@ def generate_common_parms(
             "Study Date",
             "",  # empty column 4
             "",  # empty answer_text_list
-            "F"  # question_type
+            "F",  # question_type
+            ""  # empty common_question_id for Study Date row
         ])
 
     # Step 4: Return output path

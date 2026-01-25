@@ -72,17 +72,21 @@ def main(argv: List[str]) -> int:
     print("Step 1: Processing parms files...")
     for entry in entries:
         try:
-            # Generate parmedit_APPENDED file by matching to UPLOAD
-            parmedit_appended_path = create_parmedit_appended(
-                entry.parmedit_file_name,
-                entry.upload_file_name
-            )
-            print(f"Created: {parmedit_appended_path}")
-
-            # Load parmedit_APPENDED (question_number from UPLOAD file)
-            parmedit_mapper = load_parmedit_appended(parmedit_appended_path)
-
             with DatabaseClient() as db:
+                # Generate parmedit_APPENDED file by matching to UPLOAD
+                # Also queries database for question_id
+                parmedit_appended_path = create_parmedit_appended(
+                    entry.parmedit_file_name,
+                    entry.upload_file_name,
+                    study_name=entry.study_name,
+                    study_date=entry.study_date,
+                    db_client=db
+                )
+                print(f"Created: {parmedit_appended_path}")
+
+                # Load parmedit_APPENDED (question_number from UPLOAD file)
+                parmedit_mapper = load_parmedit_appended(parmedit_appended_path)
+
                 output_path = process_parms_file(
                     entry.parms_file_name,
                     entry.study_name,
