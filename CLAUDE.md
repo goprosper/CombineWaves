@@ -117,6 +117,7 @@ For each answer position (1, 2, 3...), find where that number appears in answer_
 - Pipe-delimited (|) file
 - One row per respondent from all pip files combined
 - One column per common question (in order of CommonQuestions.csv)
+- Last column: study_date (from source control file entry, format: YYYY-MM-DD)
 - No header row (data only)
 - UTF-8 encoding
 - Answer values are transformed to use positions in common_answer_ids
@@ -133,6 +134,12 @@ Standard parms file format with no header row:
 | 4 | empty |
 | 5 | answer_text_list (^-delimited, from database) |
 | 6 | question_type (S, M, or F) |
+
+The last row is always a "Study Date" metadata row with:
+- question_number: next sequential number after all questions
+- total_answers: 0
+- question_text: "Study Date"
+- question_type: F
 
 ## Technology Stack
 

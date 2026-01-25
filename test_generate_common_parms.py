@@ -172,8 +172,8 @@ class TestGenerateCommonParms:
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            # Should have 2 data rows (no header)
-            assert len(rows) == 2
+            # Should have 3 rows: 2 question rows + 1 study_date row (no header)
+            assert len(rows) == 3
 
             # Row 1: question_number=1, total_answers=2, question_text=Gender
             assert rows[0][0] == '1'  # question_number
@@ -189,6 +189,14 @@ class TestGenerateCommonParms:
             assert rows[1][2] == 'Age Range'
             assert rows[1][4] == '18-24^25-34^35-44^45-54^55+'
             assert rows[1][5] == 'S'
+
+            # Row 3: Study Date metadata row
+            assert rows[2][0] == '3'  # question_number (next sequential)
+            assert rows[2][1] == '0'  # total_answers
+            assert rows[2][2] == 'Study Date'  # question_text
+            assert rows[2][3] == ''  # empty column 4
+            assert rows[2][4] == ''  # empty answer_text_list
+            assert rows[2][5] == 'F'  # question_type
 
     def test_generate_missing_db_record(self):
         """Verify fallback to master_question_text when DB returns None."""
@@ -211,11 +219,17 @@ class TestGenerateCommonParms:
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            assert len(rows) == 1
+            # 1 question row + 1 study_date row
+            assert len(rows) == 2
             # Should use master_question_text as fallback
             assert rows[0][2] == 'Fallback question text'
             # answer_text_list should be empty when DB returns None
             assert rows[0][4] == ''
+
+            # Verify study_date row
+            assert rows[1][0] == '2'
+            assert rows[1][2] == 'Study Date'
+            assert rows[1][5] == 'F'
 
     def test_generate_type_f_empty_answers(self):
         """Verify type F questions have 0 answers."""
@@ -240,13 +254,18 @@ class TestGenerateCommonParms:
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            assert len(rows) == 1
+            # 1 question row + 1 study_date row
+            assert len(rows) == 2
             # total_answers should be 0 for type F
             assert rows[0][1] == '0'
             # answer_text_list should be empty
             assert rows[0][4] == ''
             # question_type should be F
             assert rows[0][5] == 'F'
+
+            # Verify study_date row
+            assert rows[1][0] == '2'
+            assert rows[1][2] == 'Study Date'
 
     def test_generate_output_format(self):
         """Verify CSV has correct columns and no header."""
@@ -273,8 +292,8 @@ class TestGenerateCommonParms:
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            # Should have 3 data rows, no header
-            assert len(rows) == 3
+            # Should have 4 rows: 3 question rows + 1 study_date row (no header)
+            assert len(rows) == 4
 
             # Verify column format for each row
             for i, row in enumerate(rows, start=1):
@@ -286,6 +305,11 @@ class TestGenerateCommonParms:
             assert rows[0][0] == '1'
             assert rows[1][0] == '2'
             assert rows[2][0] == '3'
+            assert rows[3][0] == '4'  # Study Date row
+
+            # Verify last row is Study Date
+            assert rows[3][2] == 'Study Date'
+            assert rows[3][5] == 'F'
 
 
 class TestGenerateCommonParmsEdgeCases:
@@ -315,11 +339,15 @@ class TestGenerateCommonParmsEdgeCases:
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            assert len(rows) == 1
+            # 1 question row + 1 study_date row
+            assert len(rows) == 2
             # Should use master_question_text as fallback
             assert rows[0][2] == 'Master question text'
             # But answer_text_list should still be populated from DB
             assert rows[0][4] == 'Yes^No'
+
+            # Verify study_date row
+            assert rows[1][2] == 'Study Date'
 
     def test_generate_type_m_multiple_answers(self):
         """Verify type M (multiple choice) questions work correctly."""
@@ -344,10 +372,14 @@ class TestGenerateCommonParmsEdgeCases:
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            assert len(rows) == 1
+            # 1 question row + 1 study_date row
+            assert len(rows) == 2
             assert rows[0][1] == '5'  # total_answers
             assert rows[0][4] == 'Option A^Option B^Option C^Option D^Option E'
             assert rows[0][5] == 'M'
+
+            # Verify study_date row
+            assert rows[1][2] == 'Study Date'
 
     def test_generate_single_answer_question(self):
         """Verify single answer question works correctly."""
@@ -372,9 +404,13 @@ class TestGenerateCommonParmsEdgeCases:
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            assert len(rows) == 1
+            # 1 question row + 1 study_date row
+            assert len(rows) == 2
             assert rows[0][1] == '1'  # total_answers = 1
             assert rows[0][4] == 'Yes'
+
+            # Verify study_date row
+            assert rows[1][2] == 'Study Date'
 
     def test_generate_reordered_answer_ids(self):
         """Verify answer_ids that are not in sequential order."""
@@ -400,9 +436,13 @@ class TestGenerateCommonParmsEdgeCases:
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            assert len(rows) == 1
+            # 1 question row + 1 study_date row
+            assert len(rows) == 2
             # Answer IDs [2, 0, 3] -> C, A, D
             assert rows[0][4] == 'C^A^D'
+
+            # Verify study_date row
+            assert rows[1][2] == 'Study Date'
 
     def test_generate_empty_common_questions(self):
         """Verify behavior with empty CommonQuestions.csv (header only)."""
@@ -423,10 +463,15 @@ class TestGenerateCommonParmsEdgeCases:
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            # Should have 0 rows (empty output)
-            assert len(rows) == 0
+            # Should have 1 row: just the study_date row (no questions)
+            assert len(rows) == 1
             # DB should not have been called
             mock_db.get_question_master.assert_not_called()
+
+            # Verify it's the study_date row
+            assert rows[0][0] == '1'  # First row, so question_number=1
+            assert rows[0][2] == 'Study Date'
+            assert rows[0][5] == 'F'
 
 
 class TestWithRealCommonQuestionsFile:

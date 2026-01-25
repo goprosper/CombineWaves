@@ -319,8 +319,9 @@ class TestGenerateCommonPip(unittest.TestCase):
             lines = f.readlines()
 
         self.assertEqual(len(lines), 2)
-        self.assertEqual(lines[0].strip(), "1|2")
-        self.assertEqual(lines[1].strip(), "2|1")
+        # Last column is study_date
+        self.assertEqual(lines[0].strip(), "1|2|2026-01-01")
+        self.assertEqual(lines[1].strip(), "2|1|2026-01-01")
 
     def test_generate_type_f_passthrough(self):
         """Test that type F questions pass through unchanged."""
@@ -352,8 +353,9 @@ class TestGenerateCommonPip(unittest.TestCase):
         with open(self.output_path, 'r') as f:
             lines = f.readlines()
 
-        self.assertEqual(lines[0].strip(), "any text value")
-        self.assertEqual(lines[1].strip(), "another value")
+        # Last column is study_date
+        self.assertEqual(lines[0].strip(), "any text value|2026-01-01")
+        self.assertEqual(lines[1].strip(), "another value|2026-01-01")
 
     def test_generate_type_s_transform(self):
         """Test that type S questions are transformed correctly."""
@@ -387,9 +389,10 @@ class TestGenerateCommonPip(unittest.TestCase):
         with open(self.output_path, 'r') as f:
             lines = f.readlines()
 
-        self.assertEqual(lines[0].strip(), "2")
-        self.assertEqual(lines[1].strip(), "1")
-        self.assertEqual(lines[2].strip(), "3")
+        # Last column is study_date
+        self.assertEqual(lines[0].strip(), "2|2026-01-01")
+        self.assertEqual(lines[1].strip(), "1|2026-01-01")
+        self.assertEqual(lines[2].strip(), "3|2026-01-01")
 
     def test_generate_type_m_transform(self):
         """Test that type M questions are transformed correctly."""
@@ -421,8 +424,9 @@ class TestGenerateCommonPip(unittest.TestCase):
         with open(self.output_path, 'r') as f:
             lines = f.readlines()
 
-        self.assertEqual(lines[0].strip(), "2^1")
-        self.assertEqual(lines[1].strip(), "1^3")
+        # Last column is study_date
+        self.assertEqual(lines[0].strip(), "2^1|2026-01-01")
+        self.assertEqual(lines[1].strip(), "1^3|2026-01-01")
 
     def test_generate_empty_common_questions(self):
         """Test with empty CommonQuestions.csv."""
@@ -480,11 +484,11 @@ class TestGenerateCommonPip(unittest.TestCase):
         with open(self.output_path, 'r') as f:
             lines = f.readlines()
 
-        # Should have two columns, second one empty
-        self.assertEqual(lines[0].strip(), "1|")
+        # Should have three columns: q1 value, empty q99, and study_date
+        self.assertEqual(lines[0].strip(), "1||2026-01-01")
 
     def test_generate_multiple_pip_files(self):
-        """Test generating from multiple pip files."""
+        """Test generating from multiple pip files with different study_dates."""
         self._create_common_questions([
             [1, "Question", "0^1"],
         ])
@@ -506,7 +510,7 @@ class TestGenerateCommonPip(unittest.TestCase):
         entries = [
             ControlEntry(
                 study_name="test",
-                study_date="2026-01-01",
+                study_date="2025-01-01",
                 parms_file_name=parms_path1,
                 pip_file_name=pip_path1,
                 parmedit_file_name="",
@@ -514,7 +518,7 @@ class TestGenerateCommonPip(unittest.TestCase):
             ),
             ControlEntry(
                 study_name="test",
-                study_date="2026-01-01",
+                study_date="2025-04-01",
                 parms_file_name=parms_path2,
                 pip_file_name=pip_path2,
                 parmedit_file_name="",
@@ -529,6 +533,14 @@ class TestGenerateCommonPip(unittest.TestCase):
 
         # Should have 4 rows total (2 from each file)
         self.assertEqual(len(lines), 4)
+
+        # First 2 rows from file1 should have study_date 2025-01-01
+        self.assertEqual(lines[0].strip(), "1|2025-01-01")
+        self.assertEqual(lines[1].strip(), "2|2025-01-01")
+
+        # Next 2 rows from file2 should have study_date 2025-04-01
+        self.assertEqual(lines[2].strip(), "2|2025-04-01")
+        self.assertEqual(lines[3].strip(), "1|2025-04-01")
 
 
 if __name__ == '__main__':

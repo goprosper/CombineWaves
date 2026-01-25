@@ -166,5 +166,16 @@ def generate_common_parms(
                 row.question_type
             ])
 
+        # Step 3b: Write study_date metadata row
+        study_date_question_number = len(parms_rows) + 1
+        writer.writerow([
+            study_date_question_number,
+            0,  # total_answers (F type has no answer list)
+            "Study Date",
+            "",  # empty column 4
+            "",  # empty answer_text_list
+            "F"  # question_type
+        ])
+
     # Step 4: Return output path
     return output_path

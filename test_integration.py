@@ -272,7 +272,8 @@ class TestGenerateCommonParmsIntegration:
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            assert len(rows) == 3
+            # 3 question rows + 1 study_date row
+            assert len(rows) == 4
 
             # Row 1: Zip (type F, no answers)
             assert rows[0][0] == '1'  # question_number
@@ -295,6 +296,12 @@ class TestGenerateCommonParmsIntegration:
             assert rows[2][2] == 'Age Range'
             assert rows[2][4] == '14-17^18-24^25-34^35-44^45-54^55-64^65+'
             assert rows[2][5] == 'S'
+
+            # Row 4: Study Date metadata row
+            assert rows[3][0] == '4'
+            assert rows[3][1] == '0'
+            assert rows[3][2] == 'Study Date'
+            assert rows[3][5] == 'F'
 
     def test_step4_database_called_correctly(self):
         """Verify database is called with correct parameters."""
