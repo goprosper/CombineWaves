@@ -14,6 +14,13 @@ class QuestionMapRecord:
     answer_value_map: str
 
 
+@dataclass
+class QuestionMasterRecord:
+    """Represents a record from the br_question_master table."""
+    alternate_text: str
+    answer_text: str
+
+
 class DatabaseClient:
     """MySQL database client for querying question mappings."""
 
@@ -111,5 +118,42 @@ class DatabaseClient:
 
             if row:
                 return row['question_text'] or ''
+
+            return None
+
+    def get_question_master(
+        self,
+        study_name: str,
+        question_id: int
+    ) -> Optional[QuestionMasterRecord]:
+        """
+        Retrieve question master record from br_question_master.
+
+        Args:
+            study_name: Name of the study
+            question_id: Question ID
+
+        Returns:
+            QuestionMasterRecord if found, None otherwise
+        """
+        if not self._connection:
+            raise RuntimeError("Database connection not open. Use 'with' statement.")
+
+        sql = """
+            SELECT alternate_text, answer_text
+            FROM br_question_master
+            WHERE study_name = %s
+              AND question_id = %s
+        """
+
+        with self._connection.cursor() as cursor:
+            cursor.execute(sql, (study_name, question_id))
+            row = cursor.fetchone()
+
+            if row:
+                return QuestionMasterRecord(
+                    alternate_text=row['alternate_text'] or '',
+                    answer_text=row['answer_text'] or ''
+                )
 
             return None

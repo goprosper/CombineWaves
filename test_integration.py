@@ -223,5 +223,136 @@ class TestEndToEndWorkflow:
             assert rows[1][7] == "1^2^0"
 
 
+class TestGenerateCommonParmsIntegration:
+    """Integration tests for Step 4: Generate Common Parms."""
+
+    def test_step4_workflow_with_mock_db(self):
+        """Test Step 4 workflow: CommonQuestions.csv -> CommonParms.csv."""
+        from generate_common_parms import generate_common_parms
+        from database import QuestionMasterRecord
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create CommonQuestions.csv (output of Step 2)
+            common_questions_path = os.path.join(tmpdir, "CommonQuestions.csv")
+            with open(common_questions_path, 'w', encoding='utf-8', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['common_question_id', 'master_question_text', 'common_answer_ids', 'ParmsQuestionType', 'ParmeditQuestionType'])
+                writer.writerow([288, 'Zip:', '', 'F', 'Z'])
+                writer.writerow([1, 'What is your gender?', '0^1', 'S', 'X'])
+                writer.writerow([3, 'Please tell us which age range you are in:', '0^1^2^3^4^5^6', 'S', 'A'])
+
+            output_path = os.path.join(tmpdir, "CommonParms.csv")
+
+            # Mock database
+            mock_db = MagicMock()
+
+            def mock_get_question_master(study_name, question_id):
+                records = {
+                    288: QuestionMasterRecord(alternate_text="Zip Code", answer_text=""),
+                    1: QuestionMasterRecord(alternate_text="Gender", answer_text="Male^Female"),
+                    3: QuestionMasterRecord(alternate_text="Age Range", answer_text="14-17^18-24^25-34^35-44^45-54^55-64^65+"),
+                }
+                return records.get(question_id)
+
+            mock_db.get_question_master.side_effect = mock_get_question_master
+
+            # Run Step 4
+            result = generate_common_parms(
+                common_questions_path,
+                "CIA",
+                mock_db,
+                output_path
+            )
+
+            assert result == output_path
+            assert os.path.exists(output_path)
+
+            # Verify output matches expected parms format
+            with open(output_path, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                rows = list(reader)
+
+            assert len(rows) == 3
+
+            # Row 1: Zip (type F, no answers)
+            assert rows[0][0] == '1'  # question_number
+            assert rows[0][1] == '0'  # total_answers
+            assert rows[0][2] == 'Zip Code'  # question_text
+            assert rows[0][3] == ''  # empty
+            assert rows[0][4] == ''  # answer_text_list (empty for F)
+            assert rows[0][5] == 'F'  # question_type
+
+            # Row 2: Gender (type S, 2 answers)
+            assert rows[1][0] == '2'
+            assert rows[1][1] == '2'
+            assert rows[1][2] == 'Gender'
+            assert rows[1][4] == 'Male^Female'
+            assert rows[1][5] == 'S'
+
+            # Row 3: Age Range (type S, 7 answers)
+            assert rows[2][0] == '3'
+            assert rows[2][1] == '7'
+            assert rows[2][2] == 'Age Range'
+            assert rows[2][4] == '14-17^18-24^25-34^35-44^45-54^55-64^65+'
+            assert rows[2][5] == 'S'
+
+    def test_step4_database_called_correctly(self):
+        """Verify database is called with correct parameters."""
+        from generate_common_parms import generate_common_parms
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            common_questions_path = os.path.join(tmpdir, "CommonQuestions.csv")
+            with open(common_questions_path, 'w', encoding='utf-8', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['common_question_id', 'master_question_text', 'common_answer_ids', 'ParmsQuestionType'])
+                writer.writerow([101, 'Question 1', '0^1', 'S'])
+                writer.writerow([202, 'Question 2', '0^1^2', 'S'])
+                writer.writerow([303, 'Question 3', '', 'F'])
+
+            output_path = os.path.join(tmpdir, "CommonParms.csv")
+
+            mock_db = MagicMock()
+            mock_record = MagicMock()
+            mock_record.alternate_text = "Test"
+            mock_record.answer_text = "A^B^C"
+            mock_db.get_question_master.return_value = mock_record
+
+            generate_common_parms(common_questions_path, "TestStudy", mock_db, output_path)
+
+            # Verify database calls
+            calls = mock_db.get_question_master.call_args_list
+            assert len(calls) == 3
+
+            # Check each call used correct study_name and question_id
+            assert calls[0][0] == ("TestStudy", 101)
+            assert calls[1][0] == ("TestStudy", 202)
+            assert calls[2][0] == ("TestStudy", 303)
+
+
+class TestQuestionMasterRecord:
+    """Tests for QuestionMasterRecord dataclass."""
+
+    def test_create_question_master_record(self):
+        """Create a QuestionMasterRecord instance."""
+        from database import QuestionMasterRecord
+
+        record = QuestionMasterRecord(
+            alternate_text="What is your gender?",
+            answer_text="Male^Female"
+        )
+
+        assert record.alternate_text == "What is your gender?"
+        assert record.answer_text == "Male^Female"
+
+    def test_question_master_record_empty_values(self):
+        """Create a QuestionMasterRecord with empty values."""
+        from database import QuestionMasterRecord
+
+        record = QuestionMasterRecord(alternate_text="", answer_text="")
+
+        assert record.alternate_text == ""
+        assert record.answer_text == ""
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
