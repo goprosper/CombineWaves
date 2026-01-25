@@ -192,7 +192,7 @@ class TestGenerateCommonParms:
 
             # Row 3: Study Date metadata row
             assert rows[2][0] == '3'  # question_number (next sequential)
-            assert rows[2][1] == '0'  # total_answers
+            assert rows[2][1] == '1'  # total_answers (type F defaults to 1)
             assert rows[2][2] == 'Study Date'  # question_text
             assert rows[2][3] == ''  # empty column 4
             assert rows[2][4] == ''  # empty answer_text_list
@@ -256,8 +256,8 @@ class TestGenerateCommonParms:
 
             # 1 question row + 1 study_date row
             assert len(rows) == 2
-            # total_answers should be 0 for type F
-            assert rows[0][1] == '0'
+            # total_answers should be 1 for type F
+            assert rows[0][1] == '1'
             # answer_text_list should be empty
             assert rows[0][4] == ''
             # question_type should be F

@@ -87,8 +87,8 @@ def determine_question_type(answer_code: str) -> Tuple[str, int, str]:
     elif "Integer (1-10)" in answer_code:
         return ("1^2^3^4^5^6^7^8^9^10", 10, "S")
     else:
-        # Free-form (Numeric, etc.)
-        return ("", 0, "F")
+        # Free-form (Numeric, etc.) - default to 1 answer
+        return ("", 1, "F")
 
 
 def load_agile_brain_index(filepath: str) -> Dict[str, List[str]]:

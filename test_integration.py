@@ -275,9 +275,9 @@ class TestGenerateCommonParmsIntegration:
             # 3 question rows + 1 study_date row
             assert len(rows) == 4
 
-            # Row 1: Zip (type F, no answers)
+            # Row 1: Zip (type F, defaults to 1 answer)
             assert rows[0][0] == '1'  # question_number
-            assert rows[0][1] == '0'  # total_answers
+            assert rows[0][1] == '1'  # total_answers (type F defaults to 1)
             assert rows[0][2] == 'Zip Code'  # question_text
             assert rows[0][3] == ''  # empty
             assert rows[0][4] == ''  # answer_text_list (empty for F)
@@ -299,7 +299,7 @@ class TestGenerateCommonParmsIntegration:
 
             # Row 4: Study Date metadata row
             assert rows[3][0] == '4'
-            assert rows[3][1] == '0'
+            assert rows[3][1] == '1'  # type F defaults to 1
             assert rows[3][2] == 'Study Date'
             assert rows[3][5] == 'F'
 

@@ -146,12 +146,12 @@ class TestDetermineQuestionType(unittest.TestCase):
     def test_numeric_answer_code(self):
         """Test Numeric (0-1) mapping (free-form)."""
         result = determine_question_type("Numeric (0-1)")
-        self.assertEqual(result, ("", 0, "F"))
+        self.assertEqual(result, ("", 1, "F"))
 
     def test_unknown_answer_code(self):
         """Test unknown answer code defaults to free-form."""
         result = determine_question_type("Some other code")
-        self.assertEqual(result, ("", 0, "F"))
+        self.assertEqual(result, ("", 1, "F"))
 
 
 class TestLoadAgileBrainIndex(unittest.TestCase):
@@ -412,7 +412,7 @@ class TestAppendCommonParms(unittest.TestCase):
 
             with open(output_path, 'r') as f:
                 lines = f.readlines()
-            self.assertIn("2,0,NumericQ: Score,,,F", lines[1])
+            self.assertIn("2,1,NumericQ: Score,,,F", lines[1])
 
 
 class TestAppendCommonData(unittest.TestCase):
@@ -591,7 +591,7 @@ class TestIntegration(unittest.TestCase):
             self.assertEqual(rows[2][0], '3')  # Sequential numbering
             self.assertEqual(rows[2][1], '2')  # Binary has 2 answers
             self.assertEqual(rows[3][1], '10')  # Integer has 10 answers
-            self.assertEqual(rows[4][1], '0')  # Numeric is free-form
+            self.assertEqual(rows[4][1], '1')  # Numeric is free-form (defaults to 1)
 
     def test_end_to_end_with_actual_files(self):
         """Test with actual project files if they exist."""
@@ -619,13 +619,15 @@ class TestMain(unittest.TestCase):
         if os.path.exists(output_parms):
             with open(output_parms, 'r') as f:
                 lines = f.readlines()
-            self.assertEqual(len(lines), 373)
+            # 274 questions (273 + Study Date) + 100 Agile Brain = 374
+            self.assertEqual(len(lines), 374)
 
         if os.path.exists(output_data):
             with open(output_data, 'r') as f:
                 first_line = f.readline()
             columns = first_line.split('|')
-            self.assertEqual(len(columns), 373)
+            # 274 columns (273 + study_date) + 100 Agile Brain = 374
+            self.assertEqual(len(columns), 374)
 
     def test_output_parms_structure(self):
         """Test the structure of output parms file."""
@@ -637,13 +639,19 @@ class TestMain(unittest.TestCase):
                 reader = csv.reader(f)
                 rows = list(reader)
 
-            # Check row 274 (first appended row)
+            # Row 274 (index 273) is the Study Date row
             row_274 = rows[273]
             self.assertEqual(row_274[0], '274')
-            self.assertEqual(row_274[1], '2')  # Binary has 2 answers
-            self.assertIn("AgileBrainAlertLevel", row_274[2])
-            self.assertEqual(row_274[4], 'Yes^No')
-            self.assertEqual(row_274[5], 'S')
+            self.assertEqual(row_274[2], 'Study Date')
+            self.assertEqual(row_274[5], 'F')
+
+            # Row 275 (index 274) is the first Agile Brain row
+            row_275 = rows[274]
+            self.assertEqual(row_275[0], '275')
+            self.assertEqual(row_275[1], '2')  # Binary has 2 answers
+            self.assertIn("AgileBrainAlertLevel", row_275[2])
+            self.assertEqual(row_275[4], 'Yes^No')
+            self.assertEqual(row_275[5], 'S')
 
 
 if __name__ == '__main__':

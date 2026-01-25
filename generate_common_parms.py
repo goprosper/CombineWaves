@@ -145,9 +145,15 @@ def generate_common_parms(
             answer_text_list = ""
 
         # Step 2d: Build ParmsRow
+        # Type F questions default to 1 answer (even though answer list is empty)
+        if question.parms_question_type == 'F':
+            total_answers = 1
+        else:
+            total_answers = len(question.common_answer_ids)
+
         parms_row = ParmsRow(
             question_number=question_number,
-            total_answers=len(question.common_answer_ids),
+            total_answers=total_answers,
             question_text=question_text,
             answer_text_list=answer_text_list,
             question_type=question.parms_question_type,
@@ -173,7 +179,7 @@ def generate_common_parms(
         study_date_question_number = len(parms_rows) + 1
         writer.writerow([
             study_date_question_number,
-            0,  # total_answers (F type has no answer list)
+            1,  # total_answers (type F defaults to 1)
             "Study Date",
             "",  # empty column 4
             "",  # empty answer_text_list

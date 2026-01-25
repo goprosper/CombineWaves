@@ -145,6 +145,26 @@ The last row is always a "Study Date" metadata row with:
 - question_type: F
 - common_question_id: empty
 
+## CommonParmedit.csv Format
+
+Generated from CommonParms.csv and the most recent study's parmedit_APPENDED.csv file. This file preserves the original question type codes (X, A, S, M, F) from the parmedit file.
+
+| Column | Content |
+|--------|---------|
+| 1 | question_number (from CommonParms) |
+| 2 | total_answers (from CommonParms) |
+| 3 | question_text (from CommonParms) |
+| 4 | empty |
+| 5 | answer_text_list (from CommonParms) |
+| 6 | question_type (from parmedit_APPENDED, preserves X/A codes) |
+| 7 | special_code (e.g., "AVG" or empty) |
+| 8 | special_values (^-delimited numeric values) |
+| 9 | reserved |
+| 10 | reference_common_qn (translated question reference) |
+| 11 | reference_common_answers (translated answer positions) |
+
+Reference questions (columns 10-11) are translated to use CommonParms question numbers and answer positions, enabling cross-referencing between common questions.
+
 ## Technology Stack
 
 - Python 3
