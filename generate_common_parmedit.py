@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 from control_file import read_control_file
+from report import get_collector
 
 
 # =============================================================================
@@ -295,7 +296,9 @@ def load_appended_answer_ids(appended_path: str) -> Dict[int, List[int]]:
 def translate_reference_answers(
     reference_answers: str,
     parmedit_answer_ids: List[int],
-    common_answer_ids: List[int]
+    common_answer_ids: List[int],
+    question_id: int = 0,
+    ref_question_id: int = 0
 ) -> str:
     """
     Translate answer positions from parmedit to CommonParms.
@@ -304,15 +307,32 @@ def translate_reference_answers(
         reference_answers: Comma-delimited list of parmedit answer positions (1-based).
         parmedit_answer_ids: Answer IDs from parmedit's .appended file.
         common_answer_ids: Answer IDs from CommonQuestions.csv.
+        question_id: Question ID of the row being processed (for error context).
+        ref_question_id: Referenced question ID (for error context).
 
     Returns:
         Comma-delimited list of translated CommonParms answer positions (1-based).
+        Positions that cannot be translated are skipped and reported as errors.
     """
     if not reference_answers.strip():
         return ''
 
+    report = get_collector()
+
     if not parmedit_answer_ids or not common_answer_ids:
-        return reference_answers  # Can't translate, return original
+        report.error(
+            "TranslateAnswersMissingData",
+            f"Cannot translate reference answers for question_id {question_id} "
+            f"(ref question_id {ref_question_id}): "
+            f"{'parmedit' if not parmedit_answer_ids else 'common'} answer_ids empty",
+            {
+                "question_id": question_id,
+                "ref_question_id": ref_question_id,
+                "reference_answers": reference_answers,
+                "step": "GenerateCommonParmedit"
+            }
+        )
+        return ''
 
     translated = []
     for pos_str in reference_answers.split(','):
@@ -322,7 +342,19 @@ def translate_reference_answers(
         try:
             parmedit_pos = int(pos_str)  # 1-based position
             if parmedit_pos < 1 or parmedit_pos > len(parmedit_answer_ids):
-                translated.append(pos_str)  # Out of bounds, keep original
+                report.error(
+                    "TranslateAnswerOutOfBounds",
+                    f"Question_id {question_id}: reference answer position {parmedit_pos} "
+                    f"out of bounds for ref question_id {ref_question_id} "
+                    f"(has {len(parmedit_answer_ids)} answer_ids) - skipped",
+                    {
+                        "question_id": question_id,
+                        "ref_question_id": ref_question_id,
+                        "position": parmedit_pos,
+                        "answer_ids_count": len(parmedit_answer_ids),
+                        "step": "GenerateCommonParmedit"
+                    }
+                )
                 continue
 
             # Get the answer_id at this parmedit position
@@ -333,9 +365,31 @@ def translate_reference_answers(
                 common_pos = common_answer_ids.index(answer_id) + 1  # 1-based
                 translated.append(str(common_pos))
             else:
-                translated.append(pos_str)  # Not found, keep original
+                report.error(
+                    "TranslateAnswerIdNotInCommon",
+                    f"Question_id {question_id}: answer_id {answer_id} "
+                    f"(from ref question_id {ref_question_id} position {parmedit_pos}) "
+                    f"not found in common_answer_ids - skipped",
+                    {
+                        "question_id": question_id,
+                        "ref_question_id": ref_question_id,
+                        "position": parmedit_pos,
+                        "answer_id": answer_id,
+                        "step": "GenerateCommonParmedit"
+                    }
+                )
         except ValueError:
-            translated.append(pos_str)  # Not a number, keep original
+            report.error(
+                "TranslateAnswerInvalidPosition",
+                f"Question_id {question_id}: non-numeric reference answer position "
+                f"'{pos_str}' for ref question_id {ref_question_id} - skipped",
+                {
+                    "question_id": question_id,
+                    "ref_question_id": ref_question_id,
+                    "position_str": pos_str,
+                    "step": "GenerateCommonParmedit"
+                }
+            )
 
     return ','.join(translated)
 
@@ -459,7 +513,9 @@ def generate_common_parmedit(
                         reference_common_answers = translate_reference_answers(
                             pm_row.reference_answers,
                             pm_answer_ids,
-                            cm_answer_ids
+                            cm_answer_ids,
+                            question_id=cp_row.common_question_id,
+                            ref_question_id=ref_qid
                         )
                     else:
                         # Referenced question not in CommonParms

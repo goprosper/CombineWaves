@@ -1,28 +1,29 @@
 """Answer ID mapping algorithm for CombineWaves."""
 
 
-def compute_answer_ids(answer_value_map: str, answer_count: int) -> str:
+def compute_answer_ids(answer_value_map: str, answer_count: int) -> tuple:
     """
     Compute answer IDs by finding each answer number's position in the value map.
 
     For each answer position (1-based), finds where that number appears in the
-    answer_value_map and returns the index as the answer_id.
+    answer_value_map and returns the index as the answer_id. Answers not found
+    in the map (e.g., "Other field") are dropped.
 
     Args:
         answer_value_map: ^-delimited string from database (e.g., "3^2^?^1^6^7^4^5")
         answer_count: Number of answers in the parms file
 
     Returns:
-        ^-delimited string of answer IDs
+        Tuple of (^-delimited string of answer IDs, valid answer count)
 
     Example:
         >>> compute_answer_ids("3^2^?^1^6^7^4^5", 7)
-        '3^1^0^6^7^4^5'
+        ('3^1^0^6^7^4^5', 7)
         >>> compute_answer_ids("2^1", 2)
-        '1^0'
+        ('1^0', 2)
     """
     if not answer_value_map or answer_count == 0:
-        return ''
+        return ('', 0)
 
     value_map = answer_value_map.split('^')
 
@@ -33,7 +34,7 @@ def compute_answer_ids(answer_value_map: str, answer_count: int) -> str:
             index = value_map.index(answer_number_str)
             answer_ids.append(str(index))
         except ValueError:
-            # Answer number not found in map - use empty string
-            answer_ids.append('')
+            # Answer number not found in map (e.g., "Other field") - skip it
+            pass
 
-    return '^'.join(answer_ids)
+    return ('^'.join(answer_ids), len(answer_ids))

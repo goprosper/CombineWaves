@@ -82,7 +82,9 @@ def process_parms_file(
 
                 if record:
                     question_id = str(record.question_id)
-                    answer_ids = compute_answer_ids(record.answer_value_map, total_answers)
+                    answer_ids, valid_count = compute_answer_ids(record.answer_value_map, total_answers)
+                    if valid_count != total_answers:
+                        row[1] = str(valid_count)
                 else:
                     # Question not found in database
                     report.warning(
