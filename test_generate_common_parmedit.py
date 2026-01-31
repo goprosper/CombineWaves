@@ -298,66 +298,66 @@ class TestTranslateReferenceAnswers:
         # common_answer_ids: [30, 10, 20] (answer_id 30 at pos 1, 10 at pos 2, 20 at pos 3)
         # reference_answers: "1,3" -> parmedit positions 1 and 3 -> answer_ids 10 and 30
         # In common: answer_id 10 is at pos 2, answer_id 30 is at pos 1
-        # Expected: "2,1"
+        # Result is sorted ascending: "1,2"
         result = translate_reference_answers(
             "1,3",
             parmedit_answer_ids=[10, 20, 30],
             common_answer_ids=[30, 10, 20]
         )
-        assert result == "2,1"
+        assert result == "1,2"
 
     def test_missing_answer_id(self):
-        """Keeps original if answer_id not found in common."""
+        """Skips answer_id not found in common and reports error."""
         # parmedit_answer_ids: [10, 20, 30]
         # common_answer_ids: [10, 30] (missing 20)
         # reference_answers: "1,2,3" -> answer_ids 10, 20, 30
-        # In common: 10 at pos 1, 20 not found (keep "2"), 30 at pos 2
-        # Expected: "1,2,2"
+        # In common: 10 at pos 1, 20 not found (skipped), 30 at pos 2
+        # Expected: "1,2"
         result = translate_reference_answers(
             "1,2,3",
             parmedit_answer_ids=[10, 20, 30],
             common_answer_ids=[10, 30]
         )
-        assert result == "1,2,2"
+        assert result == "1,2"
 
     def test_empty_parmedit_answer_ids(self):
-        """Returns original when parmedit_answer_ids is empty."""
+        """Returns empty when parmedit_answer_ids is empty."""
         result = translate_reference_answers(
             "1,2",
             parmedit_answer_ids=[],
             common_answer_ids=[10, 20]
         )
-        assert result == "1,2"
+        assert result == ""
 
     def test_empty_common_answer_ids(self):
-        """Returns original when common_answer_ids is empty."""
+        """Returns empty when common_answer_ids is empty."""
         result = translate_reference_answers(
             "1,2",
             parmedit_answer_ids=[10, 20],
             common_answer_ids=[]
         )
-        assert result == "1,2"
+        assert result == ""
 
     def test_out_of_bounds_position(self):
-        """Keeps original for out-of-bounds positions."""
+        """Skips out-of-bounds positions and reports error."""
         # parmedit has 3 elements, but reference asks for position 5
         result = translate_reference_answers(
             "1,5",
             parmedit_answer_ids=[10, 20, 30],
             common_answer_ids=[10, 20, 30]
         )
-        # Position 1 translates to 1, position 5 is out of bounds (keep "5")
-        assert result == "1,5"
+        # Position 1 translates to 1, position 5 is out of bounds (skipped)
+        assert result == "1"
 
     def test_non_numeric_position(self):
-        """Keeps original for non-numeric positions."""
+        """Skips non-numeric positions and reports error."""
         result = translate_reference_answers(
             "1,abc,3",
             parmedit_answer_ids=[10, 20, 30],
             common_answer_ids=[10, 20, 30]
         )
-        # "1" and "3" translate, "abc" is kept as-is
-        assert result == "1,abc,3"
+        # "1" and "3" translate, "abc" is skipped
+        assert result == "1,3"
 
     def test_whitespace_handling(self):
         """Handles whitespace around positions."""

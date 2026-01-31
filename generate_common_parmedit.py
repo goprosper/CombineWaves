@@ -391,6 +391,7 @@ def translate_reference_answers(
                 }
             )
 
+    translated.sort(key=int)
     return ','.join(translated)
 
 
