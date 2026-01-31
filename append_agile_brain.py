@@ -3,25 +3,25 @@
 Append Agile Brain emotional profiling data to CommonParms.csv and CommonData.pip.
 
 This program:
-1. Reads Agile_Brain_Data_Layout.csv to generate new parms rows
+1. Reads ABWithQuartilesLayout.csv to generate new parms rows
 2. Appends them to CommonParms.csv creating CommonParmsAppended.csv
-3. Matches CommonData.pip rows against Agile_Brain_Data.csv by Prosper ID
+3. Matches CommonData.pip rows against AB_Data_Quartiles_01272026.csv by Prosper ID
 4. Appends Agile Brain columns to matched rows creating CommonDataAppended.pip
 """
 
 import csv
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 
 @dataclass
 class LayoutRow:
-    """Represents a row from Agile_Brain_Data_Layout.csv (starting at row 4)."""
-    field_number: int       # Column 1: e.g., 1852
+    """Represents a row from ABWithQuartilesLayout.csv (starting at row 2)."""
     question_id: str        # Column 2: e.g., "AgileBrainAlertLevel"
-    question_text: str      # Column 3: description
-    answer_code: str        # Column 4: e.g., "Binary (0 or 1)"
+    question_type: str      # Column 3: "S" or "F"
+    question_text: str      # Column 4: pre-formatted question text
+    answer_text: str        # Column 5: ^-delimited answer list
 
 
 @dataclass
@@ -37,58 +37,32 @@ class AppendStatistics:
 
 def load_layout_file(filepath: str) -> List[LayoutRow]:
     """
-    Parse Agile_Brain_Data_Layout.csv starting from row 4 (1-based).
+    Parse ABWithQuartilesLayout.csv starting from row 2 (1-based).
 
     Args:
-        filepath: Path to Agile_Brain_Data_Layout.csv
+        filepath: Path to ABWithQuartilesLayout.csv
 
     Returns:
-        List of LayoutRow objects for fields 1852-1951
+        List of LayoutRow objects for all data rows
     """
     rows = []
     with open(filepath, 'r', encoding='utf-8-sig') as f:
         reader = csv.reader(f)
-        for i, row in enumerate(reader, start=1):
-            # Skip rows 1-3 (headers)
-            if i < 4:
-                continue
-            # Stop after row 103 (100 data rows: 4-103)
-            if i > 103:
-                break
-            if len(row) >= 4:
-                try:
-                    field_number = int(row[0])
-                except ValueError:
-                    continue
+        next(reader)  # Skip header row
+        for row in reader:
+            if len(row) >= 5:
                 question_id = row[1]
-                question_text = row[2]
-                answer_code = row[3]
+                question_type = row[2]
+                question_text = row[3]
+                answer_text = row[4]
                 rows.append(LayoutRow(
-                    field_number=field_number,
                     question_id=question_id,
+                    question_type=question_type,
                     question_text=question_text,
-                    answer_code=answer_code
+                    answer_text=answer_text
                 ))
     return rows
 
-
-def determine_question_type(answer_code: str) -> Tuple[str, int, str]:
-    """
-    Map answer code to (answer_text_list, total_answers, question_type).
-
-    Args:
-        answer_code: The answer code from the layout file
-
-    Returns:
-        Tuple of (answer_text_list, total_answers, question_type)
-    """
-    if "Binary (0 or 1)" in answer_code:
-        return ("Yes^No", 2, "S")
-    elif "Integer (1-10)" in answer_code:
-        return ("1^2^3^4^5^6^7^8^9^10", 10, "S")
-    else:
-        # Free-form (Numeric, etc.) - default to 1 answer
-        return ("", 1, "F")
 
 
 def load_agile_brain_index(filepath: str) -> Dict[str, List[str]]:
@@ -96,26 +70,23 @@ def load_agile_brain_index(filepath: str) -> Dict[str, List[str]]:
     Build an index from Prosper ID to Agile Brain data columns.
 
     Args:
-        filepath: Path to Agile_Brain_Data.csv
+        filepath: Path to AB_Data_Quartiles_01272026.csv
 
     Returns:
-        Dict mapping Prosper ID to list of 100 column values (1852-1951)
+        Dict mapping Prosper ID to list of data column values
     """
     index = {}
     with open(filepath, 'r', encoding='utf-8-sig') as f:
         reader = csv.reader(f)
         header = next(reader)  # Skip header
 
-        # Column indices (0-based): 1851 is ID #1, 1852-1951 are data columns
-        # In 0-based indexing: 1850 is ID, 1851-1950 are data columns
-        id_col = 1850
-        data_start = 1851
-        data_end = 1951  # exclusive
+        # Column 0 is ID #1 (Prosper ID), columns 1+ are data
+        num_columns = len(header)
 
         for row in reader:
-            if len(row) > data_end - 1:
-                prosper_id = row[id_col]
-                data_values = row[data_start:data_end]
+            if len(row) >= num_columns:
+                prosper_id = row[0]
+                data_values = row[1:]
                 index[prosper_id] = data_values
     return index
 
@@ -198,16 +169,16 @@ def append_common_parms(
     new_rows = []
 
     for layout_row in layout_rows:
-        question_text = f"{layout_row.question_id}: {layout_row.question_text}"
-        answer_text_list, total_answers, question_type = determine_question_type(layout_row.answer_code)
+        answer_text_list = layout_row.answer_text
+        total_answers = len(answer_text_list.split('^')) if answer_text_list else 1
 
         new_row = [
             str(next_question_num),
             str(total_answers),
-            question_text,
+            layout_row.question_text,
             "",
             answer_text_list,
-            question_type
+            layout_row.question_type
         ]
         new_rows.append(new_row)
         next_question_num += 1
@@ -288,8 +259,8 @@ def main():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     agile_dir = os.path.join(base_dir, "AgileBrainsAppend")
 
-    layout_path = os.path.join(agile_dir, "Agile_Brain_Data_Layout.csv")
-    agile_data_path = os.path.join(agile_dir, "Agile_Brain_Data.csv")
+    layout_path = os.path.join(agile_dir, "ABWithQuartilesLayout.csv")
+    agile_data_path = os.path.join(agile_dir, "AB_Data_Quartiles_01272026.csv")
     common_parms_path = os.path.join(base_dir, "CommonParms.csv")
     common_data_path = os.path.join(base_dir, "CommonData.pip")
 
